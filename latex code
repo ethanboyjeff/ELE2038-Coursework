@@ -1,0 +1,316 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage[margin=0.95in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\setlength{\columnsep}{0.24in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\captionsetup{font=small,labelfont=bf}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{ELE2038 Control Coursework}
+\fancyhead[R]{Wooden Ball Control System}
+\fancyfoot[C]{\thepage\ / \pageref{LastPage}}
+
+\title{\textbf{ELE2038 Control Coursework Report}\\[4pt]
+Control Design for a Wooden Ball on an Inclined Plane with Electromagnetic Actuation}
+\author{Student 1 \and Student 2 \and Student 3}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report presents the modelling, linearisation, and control design for the ELE2038 coursework system consisting of a wooden ball on an inclined plane connected to a spring and damper and influenced by an electromagnet. A nonlinear state-space model is derived from translational, rotational, electrical, and sensor dynamics. The model is then linearised around the operating point $x_{sp}=\SI{0.5}{m}$. A PID controller is selected because it provides zero steady-state error, satisfactory damping, and good disturbance rejection. The report discusses the open-loop, closed-loop, and disturbance transfer functions, comments on BIBO stability, and explains the expected behaviour under disturbances and parameter uncertainty. The resulting report is suitable as a coursework template and can be extended with simulation plots and real team collaboration evidence before submission.
+\end{abstract}
+
+\section{Introduction}
+The aim of this coursework is to design a controller for a nonlinear electromechanical system so that the ball position is regulated near $x_{sp}=\SI{0.5}{m}$. According to the assignment brief, the closed-loop system should be BIBO-stable, have zero steady-state error, avoid large oscillations, and reject likely disturbances. Since the magnetic force and inductance depend on position, the plant is nonlinear. Therefore, the design process starts with nonlinear modelling and then uses local linearisation for control design.
+
+\section{System Description and Assumptions}
+The system consists of a wooden ball of mass $m$ and radius $r$ rolling without slipping on an inclined plane at angle $\phi$. The ball is connected to a spring of stiffness $k$ and a damper of coefficient $b$. An electromagnet located at $x=\delta$ attracts the ball by acting on a small metal core inside it. The spring has its natural length when $x=d$.
+
+The given parameters are:
+\begin{align*}
+&m=\SI{0.462}{kg}, \quad g=\SI{9.81}{m/s^2}, \quad d=\SI{0.42}{m}, \quad \delta=\SI{0.65}{m},\\
+&r=\SI{0.123}{m}, \quad R=\SI{2200}{\ohm}, \quad L_0=\SI{0.125}{H}, \quad L_1=\SI{0.0241}{H},\\
+&\alpha=\SI{1.2}{m^{-1}}, \quad c=6.811\times10^{-3}, \quad k=\SI{1885}{N/m},\\
+&b=\SI{10.4}{N\,s/m}, \quad \phi=41^\circ, \quad \tau_m=\SI{0.03}{s}.
+\end{align*}
+
+The assumptions used are:
+\begin{itemize}[leftmargin=*]
+    \item the ball rolls without slipping,
+    \item the ball is approximated as a solid sphere, so $I=\frac{2}{5}mr^2$,
+    \item spring and damper forces act along the incline,
+    \item the sensor is first-order with gain $K_m$ and time constant $\tau_m$,
+    \item the linearised model is only intended to be valid for small deviations around the equilibrium point.
+\end{itemize}
+
+\section{Nonlinear Modelling}
+
+\subsection{Mechanical Dynamics}
+Let $x$ denote the ball-centre position measured along the incline. The distance from the electromagnet is
+\begin{equation}
+y=\delta-x.
+\end{equation}
+The magnetic force magnitude is
+\begin{equation}
+F_{\text{mag}}=\frac{c i^2}{(\delta-x)^2}.
+\end{equation}
+
+Applying Newton's second law along the incline gives
+\begin{equation}
+m\ddot{x}=mg\sin\phi+F_{\text{mag}}-k(x-d)-b\dot{x}-T,
+\end{equation}
+where $T$ is the tangential contact force due to rolling. Since the ball rolls without slipping,
+\begin{equation}
+Tr=I\ddot{\theta}, \qquad \ddot{x}=r\ddot{\theta}.
+\end{equation}
+For a solid sphere,
+\begin{equation}
+I=\frac{2}{5}mr^2 \quad \Rightarrow \quad T=\frac{I\ddot{x}}{r^2}=\frac{2}{5}m\ddot{x}.
+\end{equation}
+Substituting into the translational equation gives
+\begin{equation}
+\frac{7}{5}m\ddot{x}=mg\sin\phi+\frac{c i^2}{(\delta-x)^2}-k(x-d)-b\dot{x},
+\end{equation}
+so the mechanical equation becomes
+\begin{equation}
+\ddot{x}=\frac{5}{7m}\left(mg\sin\phi+\frac{c i^2}{(\delta-x)^2}-k(x-d)-b\dot{x}\right).
+\label{eq:mechanical}
+\end{equation}
+
+\subsection{Electrical Dynamics}
+The position-dependent inductance is
+\begin{equation}
+L(x)=L_0+L_1 e^{-\alpha(\delta-x)}.
+\end{equation}
+Using Kirchhoff's voltage law and the simplified local model used in the handwritten derivation,
+\begin{equation}
+V=iR+L(x)\dot{i},
+\end{equation}
+which gives
+\begin{equation}
+\dot{i}=\frac{V-Ri}{L_0+L_1 e^{-\alpha(\delta-x)}}.
+\label{eq:electrical}
+\end{equation}
+
+\subsection{Sensor Dynamics}
+Let $x_m$ be the measured position. The sensor is modelled by
+\begin{equation}
+x_m+\tau_m\dot{x}_m=K_m x,
+\end{equation}
+therefore
+\begin{equation}
+\dot{x}_m=\frac{1}{\tau_m}(K_m x-x_m).
+\label{eq:sensor}
+\end{equation}
+
+\subsection{Nonlinear State-Space Form}
+Choose the states
+\begin{equation}
+x_1=x, \qquad x_2=\dot{x}, \qquad x_3=i, \qquad x_4=x_m.
+\end{equation}
+The input is $u=V$ and the output is $y=x_m=x_4$. The nonlinear state equations are
+\begin{align}
+\dot{x}_1 &= x_2, \\
+\dot{x}_2 &= \frac{5}{7m}\left(mg\sin\phi+\frac{c x_3^2}{(\delta-x_1)^2}-k(x_1-d)-b x_2\right), \\
+\dot{x}_3 &= \frac{u-Rx_3}{L_0+L_1 e^{-\alpha(\delta-x_1)}}, \\
+\dot{x}_4 &= \frac{1}{\tau_m}(K_m x_1-x_4).
+\end{align}
+
+\section{Equilibrium and Linearisation}
+
+\subsection{Equilibrium Point}
+The operating point is chosen at
+\begin{equation}
+x_{sp}=\SI{0.5}{m}.
+\end{equation}
+At equilibrium,
+\begin{equation}
+\dot{x}_1=\dot{x}_2=\dot{x}_3=\dot{x}_4=0,
+\end{equation}
+so
+\begin{equation}
+x_{1,sp}=x_{sp}, \qquad x_{2,sp}=0, \qquad x_{4,sp}=K_m x_{sp}.
+\end{equation}
+From the mechanical equilibrium equation,
+\begin{equation}
+0=mg\sin\phi+\frac{c i_{sp}^2}{(\delta-x_{sp})^2}-k(x_{sp}-d),
+\end{equation}
+thus
+\begin{equation}
+i_{sp}=\sqrt{\frac{(\delta-x_{sp})^2}{c}\left[k(x_{sp}-d)-mg\sin\phi\right]}.
+\label{eq:isp}
+\end{equation}
+For the numerical values,
+\begin{equation}
+i_{sp}\approx \SI{0.699}{A}.
+\end{equation}
+From the electrical equilibrium,
+\begin{equation}
+V_{sp}=Ri_{sp}\approx \SI{1537.8}{V}.
+\end{equation}
+This value is mathematically consistent with the simplified local model, but it is very large and should be interpreted carefully when discussing practical feasibility.
+
+\subsection{Linearisation}
+Define perturbation variables around the equilibrium:
+\begin{equation}
+\tilde{x}_1=x_1-x_{1,sp},\; \tilde{x}_2=x_2-x_{2,sp},\; \tilde{x}_3=x_3-x_{3,sp},\; \tilde{x}_4=x_4-x_{4,sp},\; \tilde{u}=u-u_{sp}.
+\end{equation}
+The linearised model has the form
+\begin{equation}
+\dot{\tilde{\mathbf{x}}}=A\tilde{\mathbf{x}}+B\tilde{u}, \qquad \tilde{y}=C\tilde{\mathbf{x}}+D\tilde{u}.
+\end{equation}
+
+For the second state equation,
+\begin{equation}
+f_2=\frac{5}{7m}\left(mg\sin\phi+\frac{c x_3^2}{(\delta-x_1)^2}-k(x_1-d)-b x_2\right),
+\end{equation}
+the relevant partial derivatives are
+\begin{align}
+\frac{\partial f_2}{\partial x_1} &= \frac{5}{7m}\left(\frac{2c x_3^2}{(\delta-x_1)^3}-k\right), \\
+\frac{\partial f_2}{\partial x_2} &= -\frac{5b}{7m}, \\
+\frac{\partial f_2}{\partial x_3} &= \frac{5}{7m}\left(\frac{2c x_3}{(\delta-x_1)^2}\right).
+\end{align}
+Evaluated at the operating point,
+\begin{align}
+a_{21} &= \frac{5}{7m}\left(\frac{2c i_{sp}^2}{(\delta-x_{sp})^3}-k\right), \\
+a_{22} &= -\frac{5b}{7m}, \\
+a_{23} &= \frac{5}{7m}\left(\frac{2c i_{sp}}{(\delta-x_{sp})^2}\right).
+\end{align}
+
+Let
+\begin{equation}
+L_{sp}=L_0+L_1 e^{-\alpha(\delta-x_{sp})}.
+\end{equation}
+For the third state equation,
+\begin{equation}
+f_3=\frac{u-Rx_3}{L_0+L_1 e^{-\alpha(\delta-x_1)}},
+\end{equation}
+the simplified local derivatives are
+\begin{equation}
+\frac{\partial f_3}{\partial x_3}=-\frac{R}{L_{sp}}, \qquad \frac{\partial f_3}{\partial u}=\frac{1}{L_{sp}}.
+\end{equation}
+For the sensor equation,
+\begin{equation}
+\frac{\partial f_4}{\partial x_1}=\frac{K_m}{\tau_m}, \qquad \frac{\partial f_4}{\partial x_4}=-\frac{1}{\tau_m}.
+\end{equation}
+Therefore,
+\begin{equation}
+A=
+\begin{bmatrix}
+0 & 1 & 0 & 0 \\
+a_{21} & a_{22} & a_{23} & 0 \\
+0 & 0 & -R/L_{sp} & 0 \\
+K_m/\tau_m & 0 & 0 & -1/\tau_m
+\end{bmatrix},
+\qquad
+B=
+\begin{bmatrix}
+0 \\
+0 \\
+1/L_{sp} \\
+0
+\end{bmatrix},
+\end{equation}
+with
+\begin{equation}
+C=\begin{bmatrix}0 & 0 & 0 & 1\end{bmatrix}, \qquad D=\begin{bmatrix}0\end{bmatrix}.
+\end{equation}
+
+\subsection{Accuracy of the Linearisation}
+The linear model is only accurate near the operating point. For small deviations around $x_{sp}=\SI{0.5}{m}$ it is suitable for local controller design and stability analysis. However, for larger motions the nonlinear terms $i^2$ and $(\delta-x)^{-2}$ become more significant, so the linear approximation becomes less reliable. This is why final validation should always include simulation of the original nonlinear system.
+
+\section{Control Design}
+
+\subsection{Controller Selection}
+A PID controller is selected:
+\begin{equation}
+C(s)=K_p+\frac{K_i}{s}+K_d s.
+\end{equation}
+This choice is justified because the proportional term improves responsiveness, the integral term removes steady-state error, and the derivative term improves damping and reduces overshoot. A PD controller would not eliminate steady-state offset, while a PI-only controller may produce a more oscillatory transient response for this system.
+
+\subsection{Transfer Functions}
+Let $G(s)$ denote the plant transfer function from voltage input to measured position. Then:
+\begin{align}
+L(s) &= C(s)G(s) && \text{(open-loop transfer function)}, \\
+T(s) &= \frac{C(s)G(s)}{1+C(s)G(s)} && \text{(closed-loop transfer function)}, \\
+S(s) &= \frac{1}{1+C(s)G(s)} && \text{(disturbance or sensitivity transfer function)}.
+\end{align}
+These transfer functions are useful because $L(s)$ is used for loop-shaping and stability margins, $T(s)$ describes reference tracking, and $S(s)$ shows how disturbances and plant uncertainty affect the output.
+
+\subsection{BIBO Stability}
+The closed-loop system is BIBO-stable if all poles of $T(s)$ lie strictly in the left-half complex plane. In practice, this is checked using the linearised closed-loop model and supported by bounded simulation responses for bounded inputs. A stable controller should therefore produce bounded position, current, and measured output for bounded reference changes and disturbances.
+
+\subsection{Disturbances and Disturbance Rejection}
+Realistic disturbances include sensor noise, changes in friction, uncertainty in $k$, $b$, $c$, and the inductance model, and supply voltage fluctuations. The integral action helps reject constant or slowly varying disturbances by eliminating steady-state error. The derivative action reduces oscillation after sudden changes, while the proportional action provides the main corrective effort.
+
+\subsection{Practical Feasibility and Robustness}
+The controller is expected to work well in practice only if the operating region remains reasonably close to the linearisation point and the actuator and sensor behave similarly to the assumed model. If the parameters are misestimated, the system may remain stable but become slower or more oscillatory. Therefore, a strong final submission should test the controller under parameter variation, disturbances, and the nonlinear plant. This is also the best way to answer interview questions about robustness and practical implementation.
+
+\section{Open-Loop Interpretation}
+Suppose the system is initially at equilibrium and the voltage is increased instantaneously by \SI{1}{V} in open loop. The current increases, so the magnetic force increases. As a result, the ball is pulled further towards the electromagnet and accelerates down the incline. Because the spring force, damping force, and magnetic force all change with the state, the response is nonlinear. The measured position follows the true position with the sensor lag. Without feedback, the system will not automatically return to the original set-point after the voltage step.
+
+\section{Python Implementation}
+The Python implementation should be modular and reusable. A good structure is:
+\begin{itemize}[leftmargin=*]
+    \item a parameter block or configuration file,
+    \item a nonlinear dynamics function,
+    \item a linearisation function,
+    \item simulation functions for open-loop and closed-loop tests,
+    \item plotting routines,
+    \item clear comments and documentation.
+\end{itemize}
+Reusable code means that the operating point, controller gains, and parameter values can be changed easily without rewriting the whole implementation.
+
+\section{Conclusion}
+A nonlinear model of the coursework system has been derived from mechanical, electrical, and sensing principles. The model was linearised around $x_{sp}=\SI{0.5}{m}$ and used to motivate a PID controller that addresses tracking, regulation, and disturbance rejection. The local model is appropriate for controller design near the operating point, but nonlinear simulations remain important for practical validation. Before final submission, this report should be completed by adding real simulation plots, actual controller gains, and genuine collaboration evidence.
+
+\appendix
+\section{Interview Preparation Notes}
+\textbf{What are the states, input, and output?} The states are position, velocity, current, and measured position. The input is voltage, and the output is the measured position.\\
+\textbf{How accurate is the linearisation?} It is accurate only near the chosen operating point and becomes less reliable for larger excursions because of the nonlinear magnetic force and inductance.\\
+\textbf{Why PID?} PID is chosen because it combines tracking performance, zero steady-state error, and damping.\\
+\textbf{Will it work in practice?} It can work if the operating region stays close to the design point and the controller is checked against nonlinear simulations and parameter uncertainty.
+
+\section{Collaboration Report Template}
+Replace this appendix with your real team evidence before submission.
+
+%\begin{table}[H]
+%\centering
+%\caption{Example meeting-minutes summary}
+%\begin{tabular}{>{\raggedright\arraybackslash}p{0.11\linewidth} >%{\raggedright\arraybackslash}p{0.14\linewidth} >%{\raggedright\arraybackslash}p{0.28\linewidth} >%{\raggedright\arraybackslash}p{0.34\linewidth}}
+%\toprule
+%Date & Attendees & Progress review & Conclusions / actions \\
+%\midrule
+%[Date 1] & [Names] & Kick-off meeting and task allocation & Assign %modelling, coding, and report sections \\
+%[Date 2] & [Names] & Checked derivations and code status & Fix %discrepancies and prepare simulations \\
+%[Date 3] & [Names] & Reviewed controller results & Finalise plots and %complete report \\
+%\bottomrule
+%\end{tabular}
+%\end{table}
+
+\textbf{Collaboration technologies:} for example GitHub, Overleaf, Teams, or a shared drive.\\
+\textbf{Management:} describe task distribution, issue tracking, and whether you used a Gantt chart.\\
+\textbf{Individual contributions:} list each member's technical contribution clearly and honestly.\\
+\textbf{Challenges and solutions:} explain how disagreements, missed deadlines, or modelling issues were handled.
+
+\end{document}

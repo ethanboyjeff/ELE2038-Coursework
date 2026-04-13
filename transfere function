@@ -1,0 +1,95 @@
+import numpy as np
+from scipy import signal
+
+# =========================
+# PARAMETERS
+# =========================
+m = 0.462
+g = 9.81
+phi = np.deg2rad(41)
+
+d = 0.42
+delta = 0.65
+
+k = 1885
+b = 10.4
+
+R = 2200
+L0 = 0.125
+L1 = 0.0241
+alpha = 1.2
+
+c = 6.811e-3
+
+tau_m = 0.03
+Km = 1.0
+
+# =========================
+# EQUILIBRIUM POINT
+# =========================
+x_sp = 0.5
+
+term = k * (x_sp - d) - m * g * np.sin(phi)
+if term <= 0:
+    raise ValueError("No real equilibrium exists at this operating point.")
+
+i_sp = np.sqrt(((delta - x_sp) ** 2 / c) * term)
+L_sp = L0 + L1 * np.exp(-alpha * (delta - x_sp))
+
+# =========================
+# LINEARISED COEFFICIENTS
+# =========================
+a21 = (5 / (7 * m)) * ((2 * c * i_sp**2) / (delta - x_sp)**3 - k)
+a22 = -(5 * b) / (7 * m)
+a23 = (5 / (7 * m)) * ((2 * c * i_sp) / (delta - x_sp)**2)
+
+# =========================
+# TRANSFER FUNCTION
+# G(s) = (Km * a23) /
+#        [ (tau_m s + 1)(L_sp s + R)(s^2 - a22 s - a21) ]
+# =========================
+
+# numerator
+num = [Km * a23]
+
+# denominator factors
+den1 = [tau_m, 1]          # (tau_m s + 1)
+den2 = [L_sp, R]           # (L_sp s + R)
+den3 = [1, -a22, -a21]     # (s^2 - a22 s - a21)
+
+# full denominator
+den = np.polymul(np.polymul(den1, den2), den3)
+
+# create transfer function
+G = signal.TransferFunction(num, den)
+
+# print results
+np.set_printoptions(precision=6, suppress=True)
+
+print("i_sp =", i_sp)
+print("L_sp =", L_sp)
+print("a21 =", a21)
+print("a22 =", a22)
+print("a23 =", a23)
+
+print("\nNumerator coefficients:")
+print(num)
+
+print("\nDenominator coefficients:")
+print(den)
+
+print("\nTransfer Function G(s) = Xm(s) / U(s):")
+print(G)
+
+
+import matplotlib.pyplot as plt
+
+t, y = signal.step(G)
+
+plt.figure(figsize=(8, 5))
+plt.plot(t, y)
+plt.xlabel("Time (s)")
+plt.ylabel("Measured position response")
+plt.title("Step Response of the Linearised Transfer Function")
+plt.grid(True)
+plt.show()
