@@ -15,6 +15,15 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{caption}
 \usepackage{tikz}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+}
 \usetikzlibrary{arrows.meta,positioning}
 
 \setlength{\columnsep}{0.24in}
@@ -26,11 +35,18 @@
 
 \title{\textbf{ELE2038 Control Coursework Report}\\[4pt]
 Modelling and Control of a Wooden Ball on an Inclined Plane}
-\author{Hannah Taylor \and Ethan Burke \and Malak Ali}
+\author{Ethan Burke \and Hannah Taylor \and Malak Mostafa}
 \date{13/4/2026}
 
 \begin{document}
 \maketitle
+
+Links:
+
+\href{https://github.com/ethanboyjeff/ELE2038-Coursework}{GitHub}
+
+
+\href{https://colab.research.google.com/drive/1wPSoOhExyeVE3gJwp0vUoO-0yr0GDXF8?usp=sharing}{Colab Notebook}
 
 \begin{abstract}
 This report presents the modelling, linearisation, and control-oriented analysis of a nonlinear electromechanical system consisting of a wooden ball rolling on an inclined plane under spring-damper forces and electromagnetic actuation. A nonlinear state-space model is derived from first principles using mechanical and electrical laws. The model is then linearised about an operating point near \(x_{sp}=0.5\,\mathrm{m}\). By applying the Laplace transform to the linearised equations, a transfer function is obtained and used to study the open-loop dynamics. The open-loop system is shown to be unstable, which motivates the introduction of feedback control. A PID controller is selected because it provides a practical balance between fast response, zero steady-state error, and damping. The report also discusses disturbance rejection, robustness, practical limitations, and the structure of the closed-loop system.
@@ -350,14 +366,14 @@ A linear time-invariant system is BIBO stable if all poles of its transfer funct
 
 Using the equilibrium values at \(x_{sp}=0.5\), the coefficients were evaluated numerically in the handwritten derivation. The denominator polynomial becomes
 \[
-s^3 + 15174.90\,s^2 + 243241.11\,s - 45867102.74.
+s^3 + 15174.90\,s^2 + 243241.11\,s - 2016000.
 \]
 
 The corresponding roots are approximately
 \[
 s_1\approx -15158.62,\qquad
-s_2\approx 47.47,\qquad
-s_3\approx -63.75.
+s_2\approx 6.017,\qquad
+s_3\approx -22.1045
 \]
 
 Since one pole is positive, the open-loop system is not BIBO stable. This is an important conclusion because it shows that the plant cannot regulate itself without feedback. It also explains why controller design is necessary.
@@ -425,7 +441,7 @@ K_p>447.3.
 
 This provides a lower bound on the proportional gain for the closed-loop system and supports the controller design choice.
 
-\subsection{Sensor and Disturbance Models}
+\subsection{Sensor Model}
 The sensor is modelled as a first-order system:
 \[
 G_m(s)=\frac{K_m}{\tau_m s+1}.
@@ -437,7 +453,6 @@ G_m(s)=\frac{1}{0.03s+1}.
 \]
 
 \subsection{Disturbance Path}
-
 The disturbance is assumed to act directly on the system output, representing external effects such as unmodelled forces acting on the ball.
 
 Since the disturbance enters the system without any intermediate dynamics, the disturbance transfer function is taken as
@@ -472,24 +487,98 @@ Realistic disturbances acting on this system may include:
     \item unmodelled rolling losses.
 \end{itemize}
 
-The control system deals with these disturbances through feedback. In particular, the integral action removes steady-state error caused by constant disturbances, while the derivative term can reduce oscillations after sudden changes. A robust design should also be tested under parameter mismatch and against the original nonlinear model.
+The control system deals with these disturbances through feedback. In particular, the integral action removes steady-state error caused by constant disturbances, while the derivative term can reduce oscillations after sudden changes. 
 
 \section{Open-Loop Behaviour}
 
-If the system starts at equilibrium and the voltage is increased instantaneously by \(1\,\mathrm{V}\) in open loop, the current increases and the magnetic force becomes stronger. As a result, the ball is pulled further toward the electromagnet and accelerates down the incline. Because the system is nonlinear, the spring force, damping, and magnetic force all change as the states evolve. Since the plant is open-loop unstable, feedback is required to regulate the motion and return the system to the desired operating point.
+If the system starts at equilibrium and the voltage is increased instantaneously by \(1\,\mathrm{V}\) in open loop, the output of the system does not change all that much. As the equilibirum voltage is approx. 1537.39V, this is rather high and a 1V increase would not change the output very much. In a real world scenario this is not a practical voltage due to how high it is. The large voltage is due to the system parameters, in particular the resistance $R = 2.2k\ohm$ and k = 1885N/m.
 
 \section{Simulation Results and Discussion}
 
-This section should include the final plots from your Python implementation. The most important simulations to include are:
-\begin{itemize}
-    \item open-loop response to a \(+1\,\mathrm{V}\) step,
-    \item closed-loop tracking response,
-    \item disturbance rejection test,
-    \item control effort plot,
-    \item robustness test under parameter variation.
-\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{impulseResponse of Gcl.png}
+     \caption{Linear Impulse response of Gcl}
+    \label{fig:linearImpGcl}
+\end{figure}
 
-The discussion should comment on settling time, overshoot, steady-state error, oscillation level, and actuator demand. A strong submission should include both linear and nonlinear simulations so that the limitations of the linearised model are clearly discussed.
+The figure shows the impulse repsonse of the closed-loop transfer function. As the figure shows, the response converges around 0, meaning that this tranfer function is BIBO stable.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{StepResponse of Gcl.png}
+     \caption{Linear Step response of Gcl}
+    \label{fig:linearStepGcl}
+\end{figure}
+
+The figure above shows the closed-loop system responding to a set-point change from 0.5 m (Initial Eq) to 0.55 m. There is a significant overshoot (peaking at approximately 0.645 m) before it settles. This graph also demonstrates zero offset, as the ball eventually reaches the new set-point.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Position vs Current Response of Gcl.png}
+     \caption{Linear Position vs Current Response of Gcl}
+    \label{fig:linearPosVsCurGcl}
+\end{figure}
+
+A dual-plot showing the ball position and the corresponding electromagnet current When the position steps up, the current spikes to nearly 4A before settling at a new equilibrium current. Addresses the requirement to control the system at set-points close to x sp =0.5m, while showing the current alongside.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{impulseResponse of Gl (load).png}
+     \caption{Linear Impulse Response of Gl}
+    \label{fig:linearImpGl}
+\end{figure}
+
+This specifically focuses on the impulse response of the "load" or disturbance transfer function. It settles much faster (by 0.25s). Further evidence of disturbance rejection capabilities, and showing again that the transfer function for the load is BIBO stable as it eventually converges at 0.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Position repsonse of disturbance.png}
+     \caption{Linear Position Response of disturbance}
+    \label{fig:linearDisturbanceGl}
+\end{figure}
+
+This plot shows how the system reacts when a disturbance is introduced (starting from a position of 0.7m). The system oscillates and eventually settles near the initial equilibrium. Directly demonstrates the requirement to reject possible disturbances, and shows how the linearised system manages disturbances.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{nonlinear_openloop_response.png}
+     \caption{Open-loop nonlinear response to a +1mm initial position disturbance}
+    \label{fig:nonlinear_ol}
+\end{figure}
+
+This graph demonstrates the open-loop instability of the magnetic suspension system at the $x_{sp} = 0.50m$ operating point. With the PID controller disabled and a constant equilibrium voltage applied, a $+1mm$ positional disturbance causes the mass to rapidly and unstably diverge toward the electromagnet. This confirms that the uncontrolled plant is fundamentally unstable, validating the absolute necessity of closed-loop feedback control.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{nonlinear_response.png}
+    \caption{Closed-loop Non-linear response}
+\end{figure}
+
+This graph illustrates the closed-loop tracking performance of the simplified 3-state nonlinear model. The ball is initially displaced to $x_1 = 0.40m$ and commanded to reach the $x_{sp} = 0.44m$ setpoint. By removing the sensor dynamics ($\tau_m$) used in previous tests, the PID controller operates with an ideal, zero-latency measurement. Consequently, the position response is exceptionally smooth, achieving a settling time of approximately $0.4$ seconds with negligible overshoot and zero steady-state error. The actuator demand plot (bottom) confirms the controller initially rises to the $3000V$ hardware limit to rapidly accelerate the mass, before settling precisely at the theoretically calculated equilibrium voltage ($V_{eq} \approx 1043V$).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{nonlinear_disturbance_response.png}
+     \caption{Closed-loop Non-linear disturbance response}
+\end{figure}
+
+This graph demonstrates the closed-loop disturbance rejection of the non-linear plant at the $x_{sp} = 0.44m$ equilibrium, incorporating the $\tau_m = 0.03s$ sensor. The system is hovering stably when a sudden physical step-disturbance (a $+0.15~m/s$ velocity impulse) is injected at $t = 2.0s$. Unlike an idealized zero-latency model, the inclusion of the realistic sensor delay prevents instantaneous controller reaction. This phase lag results in a visible transient overshoot and minor oscillation before the PID controller accumulates the necessary integral effort to successfully restore the mass to the target setpoint. The actuator demand plot confirms the rapid, realistic voltage fluctuations required to arrest the sudden velocity spike without saturating the power supply.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{nonli_vs_li_xsp0.44.png}
+    \caption{Nonlinear vs Linear response at $x_{sp}=0,44$}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{nonli_vs_li_xsp0.5.png}
+    \caption{Nonlinear vs Linear response at $x_{sp}=0,5$}
+\end{figure}
+
+Comparing these two responses clearly illustrates the limitations of small-signal linearisation in a highly non-linear system:At $x_{sp} = 0.44m$ (Further from magnet): The linearised model accurately tracks the true non-linear plant. The magnetic force curve is relatively gradual here, allowing the fixed PID controller to stably manage the $-4cm$ displacement with minimal oscillation.At $x_{sp} = 0.50m$: The linear approximation completely breaks down. Because the $1/y^2$ magnetic force is exponentially steeper at this distance, the $-4cm$ step pushes the system far outside its valid linear region. Both models settle at 0.5m but take much longer (around the 4 second mark).
+
 
 \section{Conclusion}
 
@@ -497,36 +586,82 @@ A nonlinear model of the wooden-ball system was derived from mechanical and elec
 
 \appendix
 
-\section{Interview Preparation Notes}
-
-\textbf{What are the states, input, and output?}  
-The simplified states are position, velocity, and current. The input is voltage, and the output in the simplified state-space model is position.
-
-\textbf{Why are the sensor dynamics not included in the state-space model above?}  
-Because the simplified plant model is written using the mechanical and electrical states only. The sensor is then introduced later in the controller-design stage through the transfer function \(G_m(s)\).
-
-\textbf{How accurate is the linearisation?}  
-It is accurate only near the operating point. For larger deviations, the nonlinear magnetic-force and inductance terms become more significant.
-
-\textbf{Why derive the transfer function?}  
-The transfer function makes stability analysis and controller design easier by representing the input-output behaviour in the Laplace domain.
-
-\textbf{Is the open-loop system BIBO stable?}  
-No. One pole of the denominator is positive, so the open-loop system is unstable.
-
-\textbf{Why use PID?}  
-PID provides zero steady-state error and improved damping. A P controller would leave an offset, and a PI controller was considered insufficient because the derivative term is needed to improve transient behaviour.
 
 \section{Collaboration Report}
 
-Replace this appendix with your real collaboration evidence before submission.
+\subsection*{Collaboration Tools}
+The team used:
+\begin{itemize}
+    \item GitHub for version control and code sharing,
+    \item Overleaf for collaborative report writing,
+    \item Microsoft Teams for meetings and communication.
+\end{itemize}
 
-\textbf{Collaboration tools:} GitHub, Overleaf, MS Teams.
+\subsection*{Project Management}
+Meetings were scheduled to track progress and assign tasks. Each meeting ended with clearly defined responsibilities for each team member.
 
-\textbf{Project management approach:} weekly meetings, clear task allocation, and version control.
+\subsection*{Challenges and Resolutions}
+One of the main challenges was ensuring consistency between the nonlinear model, the linearised equations, and the controller design. This was resolved through joint review sessions and repeated comparison between the handwritten derivations, the Python simulations, and the LaTeX report.
 
-\textbf{Individual contributions:} each team member should state their exact technical contribution.
+\subsection*{Teamwork Reflection}
+The team maintained effective communication throughout the project. Tasks were distributed clearly, and all members contributed to both the technical and written parts of the coursework.
 
-\textbf{Challenges and solutions:} explain how modelling disagreements, scheduling problems, or coding issues were resolved.
+
+\begin{table*}[ht]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|p{2.2cm}|p{2cm}|p{6cm}|p{7cm}|}
+\hline
+\textbf{Date} & \textbf{Attendees} & \textbf{Progress Review} & \textbf{Conclusions / Actions} \\
+\hline
+
+17th Feb & EB, MA, HT &
+GitHub repository, and LaTeX document setup. &
+A1.1 MA to set up LaTeX document. 
+A1.2 EB to set up private Git repository and invite all team members. 
+A1.3 HT to review the force diagram and compare next week. \\
+\hline
+
+26th Feb & EB, MA, HT &
+Initial setup tasks completed. Began reviewing Newton’s laws and system modelling. &
+A2.1 All to review Newton’s laws to derive equations. 
+A2.2 MA to add force diagram to LaTeX document. 
+A2.3 HT to begin Python implementation of Newtonian dynamics. \\
+\hline
+
+8th April & EB, MA, HT &
+Finalised nonlinear modelling. Verified mechanical and electrical equations. Began state-space formulation. &
+A3.1 MA to add complete state-space equations to LaTeX. 
+A3.2 HT to check modelling assumptions, and complete state space equations. 
+A3.3 EB to implement nonlinear model in Python. 
+MA completed handwritten matrix formulation and linearisation derivation. 
+HT completed remaining handwritten modelling derivations. \\
+\hline
+
+10th April & EB, MA, HT &
+Completed state-space model. Began linearisation and equilibrium calculations. &
+A4.1 HT to finalise linearisation equations and implement model in Python. 
+A4.2 EB to verify equilibrium calculations. 
+A4.3 MA to review all equations and add to report. \\
+\hline
+
+12th April & EB, MA, HT &
+Completed linearisation and derived transfer function using Laplace transform. Analysed system stability. &
+A5.1 MA to document transfer function derivation. 
+A5.2 EB to analyse poles and stability. 
+A5.3 HT to begin PID controller design and complete Laplace work. \\
+\hline
+
+13th April & EB, MA, HT &
+Finalised PID controller, simulations, and LaTeX report. Completed disturbance analysis and graphs. &
+A6.1 All to review final report. 
+A6.2 HT to finalise simulation plots. 
+A6.3 MA to upload final PDF. 
+A6.4 EB to proofread before submission. \\
+\hline
+
+\end{tabular}
+}
+\end{table*}
 
 \end{document}
